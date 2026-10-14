@@ -1,0 +1,6 @@
+{
+  "name": "Push notifications",
+  "short_name": "Push",
+  "start_url": "./",
+  "display": "standalone"
+}

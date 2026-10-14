@@ -1,0 +1,13 @@
+{
+  "name": "actions-web-push",
+  "version": "0.1.0",
+  "description": "Web Push notifications from GitHub Actions or Node with no dependencies: VAPID (RFC 8292) and aes128gcm (RFC 8291) on Node's built-in crypto.",
+  "main": "web-push.js",
+  "scripts": {
+    "test": "node web-push.js --selftest",
+    "keys": "node web-push.js keys"
+  },
+  "keywords": ["web-push", "push-notifications", "vapid", "github-actions", "zero-dependency"],
+  "engines": { "node": ">=18" },
+  "license": "MIT"
+}

@@ -1,0 +1,40 @@
+# Sends a push notification from GitHub Actions. Run it by hand from the Actions tab, or call
+# web-push.js from your own workflow the same way. Needs three repository secrets:
+#   VAPID_PRIVATE_KEY   the JWK `node web-push.js keys` printed
+#   VAPID_SUBJECT       mailto:you@example.com (or an https: URL); push services require it
+#   PUSH_SUBSCRIPTION   the code index.html showed (one subscription, or a JSON array of them)
+name: notify
+
+on:
+  workflow_dispatch:
+    inputs:
+      title:
+        description: Notification title
+        default: Hello from GitHub Actions
+      body:
+        description: Notification text
+        default: Web Push with no dependencies.
+  # schedule:
+  #   - cron: '0 8 * * 1-5'      # e.g. a weekday-morning notification
+
+permissions:
+  contents: read
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node web-push.js --selftest
+      # Inputs go through env rather than straight into the command, so text typed into the form
+      # can never be run as shell.
+      - run: node web-push.js send "$TITLE" "$BODY"
+        env:
+          TITLE: ${{ inputs.title || 'Scheduled notification' }}
+          BODY: ${{ inputs.body || '' }}
+          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+          VAPID_SUBJECT: ${{ secrets.VAPID_SUBJECT }}
+          PUSH_SUBSCRIPTION: ${{ secrets.PUSH_SUBSCRIPTION }}

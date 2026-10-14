@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Push subscription</title>
+    <link rel="manifest" href="manifest.webmanifest">
+    <style>
+        body { font: 16px/1.5 system-ui, sans-serif; max-width: 36rem; margin: 2rem auto; padding: 0 1rem; color: #222; background: #fff; }
+        button { font: inherit; padding: .5rem 1rem; cursor: pointer; }
+        textarea { width: 100%; height: 9rem; font: 12px/1.4 ui-monospace, monospace; margin-top: .5rem; }
+        @media (prefers-color-scheme: dark) { body { color: #ddd; background: #111; } textarea { background: #1b1b1b; color: #ddd; } }
+    </style>
+</head>
+<body>
+    <h1>Push notifications</h1>
+    <p>Press the button on the phone (or browser) that should receive notifications. Copy the code it
+        shows and save it as the repository secret <code>PUSH_SUBSCRIPTION</code>.</p>
+    <button id="subscribe" type="button">Enable notifications</button>
+    <p id="status" role="status"></p>
+    <textarea id="code" readonly hidden></textarea>
+    <button id="copy" type="button" hidden>Copy</button>
+    <script>
+        // Paste the public key `node web-push.js keys` printed. It is safe to publish.
+        const VAPID_PUBLIC_KEY = 'PASTE_YOUR_PUBLIC_KEY_HERE';
+
+        const status = document.getElementById('status'), code = document.getElementById('code'), copy = document.getElementById('copy');
+        const say = (text, sub) => { status.textContent = text; code.hidden = copy.hidden = !sub; code.value = sub || ''; };
+        const keyBytes = b64 => Uint8Array.from(atob((b64 + '='.repeat((4 - b64.length % 4) % 4)).replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0));
+
+        document.getElementById('subscribe').addEventListener('click', async () => {
+            if (!('serviceWorker' in navigator) || !('PushManager' in window))
+                return say('This browser cannot receive push notifications. On an iPhone, add this page to the Home Screen first and open it from there.');
+            if (VAPID_PUBLIC_KEY.startsWith('PASTE')) return say('Paste your VAPID public key into index.html first.');
+            try {
+                if (await Notification.requestPermission() !== 'granted')
+                    return say('Notifications are blocked for this site. Allow them in the browser settings, then try again.');
+                const reg = await navigator.serviceWorker.register('sw.js');
+                await navigator.serviceWorker.ready;
+                const sub = await reg.pushManager.getSubscription()
+                    || await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: keyBytes(VAPID_PUBLIC_KEY) });
+                say('Subscribed. Save this as the PUSH_SUBSCRIPTION secret. It identifies this device only, but treat it as private: anyone holding it and your key could notify you.', JSON.stringify(sub));
+            } catch (e) {
+                say('Could not subscribe: ' + e.message);
+            }
+        });
+        copy.addEventListener('click', async () => {
+            try { await navigator.clipboard.writeText(code.value); copy.textContent = 'Copied'; }
+            catch { code.select(); copy.textContent = 'Select all, then copy'; }
+        });
+    </script>
+</body>
+</html>
